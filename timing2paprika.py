@@ -19,9 +19,6 @@ class Timing2Paprika:
         if to_date is None:
             to_date = datetime.now() + timedelta(days=1)
 
-        # entries = json.loads(
-        #    '[{"self": "/time-entries/3652492960070895360", "start_date": "2023-11-23T08:05:29.034261+00:00", "end_date": "2023-11-23T11:20:48.808793+00:00", "duration": 11719.774532, "project": {"self": "/projects/3520914886232515072", "team_id": null, "title": "PixartPrinting", "title_chain": ["Quamm", "PixartPrinting"], "color": "#30779EFF", "productivity_score": 1, "is_archived": false, "parent": {"self": "/projects/3513417058817328735"}}, "title": "Gql Proxy", "notes": null, "is_running": false, "creator_name": "meskatech@gmail.com"}]')
-
         entries = self.timing.get_entries(from_date, to_date)
 
         # filter entries that have 'PAPRIKA_ID' in notes ( already synced )

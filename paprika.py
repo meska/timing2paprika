@@ -7,6 +7,7 @@ import requests
 
 class Paprika:
     clienti = []
+    incarichi = []
 
     def __init__(self):
         self.session = requests.Session()
@@ -35,7 +36,7 @@ class Paprika:
         )
         if res.status_code != 200:
             raise ValueError("Error logging in Paprika")
-        if res.json().get('status') != True:
+        if not res.json().get('status'):
             raise ValueError(f"Error logging in Paprika: {res.json().get('message', '')}")
         return True
 
@@ -304,7 +305,7 @@ class Paprika:
         if res.status_code != 200:
             raise ValueError("Error adding entry to Paprika")
 
-        if res.json().get('status') != True:
+        if not res.json().get('status'):
             raise ValueError(f"Error adding entry to Paprika: {res.json().get('message', '')}")
 
         return res.json().get('result').get('TB').get('TB_MN') # TB_MN è il numero dell'entry salvata
