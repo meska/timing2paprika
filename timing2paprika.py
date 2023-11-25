@@ -68,7 +68,7 @@ class Timing2Paprika:
                         entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
                     )
                 except Exception as e:
-                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}", sound="siren", title=customer.title())
+                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}", sound="siren", title=customer.title(), priority=1)
         else:
             # self.pushover.message(message="No entries to sync")
             print("No entries to sync")
