@@ -153,6 +153,7 @@ class Pushover(object):
         "expire",
         "html",
         "attachment",
+        "ttl"
     ]
     glance_keywords = ["title", "text", "subtext", "count", "percent", "device"]
 

@@ -14,7 +14,7 @@ class Timing2Paprika:
         self.timing = Timing()
         self.pushover = Pushover(token=os.getenv("PUSHOVER_TOKEN"), user=os.getenv("PUSHOVER_USER"))
         self.paprika = None
-        self.pushover.message(message="Starting Timing2Paprika",sound="none")
+        self.pushover.message(message="Starting Timing2Paprika", priority=-1, ttl=60)
 
     # async function
 
@@ -48,7 +48,7 @@ class Timing2Paprika:
             self.paprika = Paprika()
 
             for entry in entries:
-                self.pushover.message(message=f"Syncing {entry.get('title')}")
+                self.pushover.message(message=f"Syncing {entry.get('title')}", ttl=3600 * 24)
                 start_date = datetime.strptime(
                     entry.get("start_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
@@ -68,7 +68,7 @@ class Timing2Paprika:
                         entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
                     )
                 except Exception as e:
-                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}",sound="siren")
+                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}", sound="siren")
         else:
             # self.pushover.message(message="No entries to sync")
             print("No entries to sync")
