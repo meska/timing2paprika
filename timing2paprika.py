@@ -1,17 +1,21 @@
 """
 Sync Timing App to Infinity
 """
-
+import os
 from datetime import datetime, timedelta
 
-from paprika import Paprika
-from timing import Timing
+from helpers.paprika import Paprika
+from helpers.timing import Timing
+from helpers.pushover import Pushover
 
 
 class Timing2Paprika:
     def __init__(self):
         self.timing = Timing()
+        self.pushover = Pushover(token=os.getenv("PUSHOVER_TOKEN"), user=os.getenv("PUSHOVER_USER"))
         self.paprika = None
+
+    # async function
 
     def run(self, from_date: datetime = None, to_date: datetime = None, customer=None):
         if from_date is None:
@@ -39,9 +43,11 @@ class Timing2Paprika:
             entries = list(filter(filter_customer, entries))
 
         if entries:
+            # self.pushover.message(message=f"Found {len(entries)} entries to sync")
             self.paprika = Paprika()
 
             for entry in entries:
+                self.pushover.message(message=f"Syncing {entry.get('title')}")
                 start_date = datetime.strptime(
                     entry.get("start_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
@@ -49,15 +55,19 @@ class Timing2Paprika:
                     entry.get("end_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
 
-                paprika_id = self.paprika.add_entry(
-                    project=entry.get("project").get("title"),
-                    title=entry.get("title"),
-                    start_date=start_date,
-                    end_date=end_date,
-                )
+                try:
+                    paprika_id = self.paprika.add_entry(
+                        project=entry.get("project").get("title"),
+                        title=entry.get("title"),
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
 
-                self.timing.update_entry(
-                    entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
-                )
+                    self.timing.update_entry(
+                        entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
+                    )
+                except Exception as e:
+                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}",sound="siren")
         else:
+            # self.pushover.message(message="No entries to sync")
             print("No entries to sync")
