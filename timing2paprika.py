@@ -14,7 +14,7 @@ class Timing2Paprika:
         self.timing = Timing()
         self.pushover = Pushover(token=os.getenv("PUSHOVER_TOKEN"), user=os.getenv("PUSHOVER_USER"))
         self.paprika = None
-        self.pushover.message(message="Starting Timing2Paprika",sound="silent")
+        self.pushover.message(message="Starting Timing2Paprika",sound="none")
 
     # async function
 
