@@ -48,7 +48,7 @@ class Timing2Paprika:
             self.paprika = Paprika()
 
             for entry in entries:
-                self.pushover.message(message=f"Syncing {entry.get('title')}", ttl=3600 * 24)
+                self.pushover.message(message=f"Syncing {entry.get('title')}", ttl=3600 * 24, title=customer.title())
                 start_date = datetime.strptime(
                     entry.get("start_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
@@ -68,7 +68,7 @@ class Timing2Paprika:
                         entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
                     )
                 except Exception as e:
-                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}", sound="siren")
+                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}", sound="siren", title=customer.title())
         else:
             # self.pushover.message(message="No entries to sync")
             print("No entries to sync")
