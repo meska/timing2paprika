@@ -4,6 +4,7 @@ from time import sleep
 
 import sentry_sdk
 from dotenv import load_dotenv
+from telegram import Bot
 
 from timing2paprika import Timing2Paprika
 
@@ -16,7 +17,9 @@ load_dotenv()
 
 if __name__ == "__main__":
     print("Starting Timing2Paprika")
-    t2p = Timing2Paprika()
+    t2p = Timing2Paprika(telegram=True)
+
+
 
     # loop ogni ora
     while True:

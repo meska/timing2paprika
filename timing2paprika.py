@@ -1,20 +1,45 @@
 """
 Sync Timing App to Infinity
 """
+import asyncio
 import os
 from datetime import datetime, timedelta
 
+from telegram import Bot
+
 from helpers.paprika import Paprika
 from helpers.timing import Timing
-from helpers.pushover import Pushover
 
 
 class Timing2Paprika:
-    def __init__(self):
+
+    def message(self, message):
+        if self.telegram:
+            asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
+                chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+                text=message,
+            ))
+        else:
+            print(message)
+
+    def error(self, message, title=None):
+        if self.telegram:
+            asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
+                chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+                text=message,
+            ))
+        else:
+            print(message)
+
+    def __init__(self, telegram=False):
         self.timing = Timing()
-        self.pushover = Pushover(token=os.getenv("PUSHOVER_TOKEN"), user=os.getenv("PUSHOVER_USER"))
+        if telegram:
+            self.telegram = Bot(token=os.getenv("TELEGRAM_TOKEN"))
+            asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
+                chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+                text="Starting Timing2Paprika",
+            ))
         self.paprika = None
-        self.pushover.message(message="Starting Timing2Paprika", priority=-1, ttl=60)
 
     # async function
 
@@ -48,7 +73,8 @@ class Timing2Paprika:
             self.paprika = Paprika()
 
             for entry in entries:
-                self.pushover.message(message=f"Syncing {entry.get('title')}", ttl=3600 * 24, title=customer.title())
+                self.message(message=f"Syncing {entry.get('title')}")
+
                 start_date = datetime.strptime(
                     entry.get("start_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
@@ -68,7 +94,7 @@ class Timing2Paprika:
                         entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
                     )
                 except Exception as e:
-                    self.pushover.message(message=f"Error syncing {entry.get('title')} {e}", sound="siren", title=customer.title(), priority=1)
+                    self.error(message=f"Error syncing {entry.get('title')} {e}")
         else:
             # self.pushover.message(message="No entries to sync")
             print("No entries to sync")

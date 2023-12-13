@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "timing2paprika"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["meska <meskatech@gmail.com>"]
 readme = "README.md"
@@ -9,7 +9,8 @@ readme = "README.md"
 python = "^3.11"
 python-dotenv = "^1.0.0"
 requests = "^2.31.0"
-sentry-sdk = "^1.37.1"
+sentry-sdk = "^1.39.0"
+python-telegram-bot = "^20.7"
 
 
 [build-system]
