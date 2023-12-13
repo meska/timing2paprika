@@ -236,11 +236,26 @@ class Paprika:
         )
         if res.status_code != 200:
             raise ValueError("Error getting incarichi from Paprika")
-        return res.json().get('result').get('records')
+        incarichi = res.json().get('result').get('records')
+
+        for x in incarichi:
+            # ignoro quelli scaduti
+            try:
+                if x.get('JT_DATE_2') is not None:
+                    job_end_date = datetime.fromisoformat(x.get('JT_DATE_2'))
+                    if datetime.now(tz=job_end_date.tzinfo) > job_end_date:
+                        continue
+                print(f"Incarico Attivo {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}")
+            except TypeError:
+                self.error(f"Errore parsing data {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}")
+                print(f"Errore parsing data {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}")
+
+        return incarichi
 
     def get_progetti_cliente(self, cliente_id):
+        date = datetime.now().strftime("%Y%m%d")
         res = self.session.get(
-            f'{os.getenv("PAPRIKA_URL")}/TBp0201/search/JO_SEARCH?search=&searchMc=false&samn={cliente_id}&date=20231124&limit=201')
+            f'{os.getenv("PAPRIKA_URL")}/TBp0201/search/JO_SEARCH?search=&searchMc=false&samn={cliente_id}&date={date}&limit=201')
         if res.status_code != 200:
             raise ValueError("Error getting progetti from Paprika")
         return res.json().get('result').get('JO_SEARCH')
@@ -248,34 +263,39 @@ class Paprika:
     def add_entry(self, project: str, title: str, start_date: datetime, end_date: datetime) -> int:
         print("Adding entry to Paprika")
 
-        # tacon temporaneo
-        if project.lower() == 'pixartprinting':
-            project = 'Pixart'
+        cli = project.split("|")[-1].strip()
 
-        cliente = list(filter(lambda x: x.get('SA_SHORTNAME').lower() == project.lower(), self.clienti))
+        cliente = list(filter(lambda x: x.get('SA_SHORTNAME').lower().strip() == cli.lower(), self.clienti))
 
         if len(cliente) == 0:
-            listclienti = list(map(lambda x: x.get('SA_SHORTNAME').lower(), self.clienti))
+            listclienti = list(map(lambda x: x.get('SA_SHORTNAME').lower().strip(), self.clienti))
             raise ValueError(f"Customer {project} not found in Paprika: {listclienti}")
         cliente = cliente[0]
         progetti = self.get_progetti_cliente(cliente.get('SA_MN'))
 
+        for p in progetti:
+            print(f"Progetto {p['JO_JOB_KEY']} {p['JO_JOB_TITLE']}")
+
         # individuo l'incarico corretto in base ai progetti
         def filter_incarichi(x):
+
+            # ignoro quelli scaduti
+            if x.get('JT_DATE_2') is not None:
+                job_end_date = datetime.fromisoformat(x.get('JT_DATE_2'))
+                if datetime.now(tz=job_end_date.tzinfo) > job_end_date:
+                    return False
+
             job = x.get('JO_JOB_KEY')
             proj = list(filter(lambda x: x.get('JO_JOB_KEY') == job, progetti))
             if len(proj) == 0:
                 return False
-            # ignoro quelli scaduti
-            job_end_date = datetime.fromisoformat(x.get('JT_DATE_2'))
-            if datetime.now(tz=job_end_date.tzinfo) > job_end_date:
-                return False
+
             return True
 
         incarichi_attivi = list(filter(filter_incarichi, self.incarichi))
 
         if len(incarichi_attivi) == 0:
-            raise ValueError(f"No active incarichi found for customer {project}")
+            raise ValueError(f"Nessun incarico attivo trovato {project}")
 
         incarico = incarichi_attivi[0]
 
