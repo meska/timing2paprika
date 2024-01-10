@@ -19,11 +19,9 @@ if __name__ == "__main__":
     print("Starting Timing2Paprika")
     t2p = Timing2Paprika(telegram=True)
 
-
-
     # loop ogni ora
     while True:
-        from_date = datetime.now() - timedelta(days=16)
+        from_date = datetime.now() - timedelta(days=30)
         t2p.run(from_date=from_date, customer="Quamm")
         print("Sleeping for 1 hour")
         print("--------------------------------")

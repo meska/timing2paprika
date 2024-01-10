@@ -5,6 +5,7 @@ import asyncio
 import os
 from datetime import datetime, timedelta
 
+from redis import Redis
 from telegram import Bot
 
 from helpers.paprika import Paprika
@@ -33,6 +34,9 @@ class Timing2Paprika:
 
     def __init__(self, telegram=False):
         self.timing = Timing()
+        redis_url = os.getenv("REDIS_URL")
+        self.r = Redis.from_url(redis_url)
+
         if telegram:
             self.telegram = Bot(token=os.getenv("TELEGRAM_TOKEN"))
             asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
@@ -73,6 +77,11 @@ class Timing2Paprika:
             self.paprika = Paprika()
 
             for entry in entries:
+
+                # skip if cached
+                if self.r.get(entry.get("self")):
+                    continue
+
                 self.message(message=f"Syncing {entry.get('title')}")
 
                 start_date = datetime.strptime(
@@ -95,6 +104,8 @@ class Timing2Paprika:
                     )
                 except Exception as e:
                     self.error(message=f"Error syncing {entry.get('title')} {e}")
+                    # cache error for 24 hours
+                    self.r.setex(entry.get("self"), timedelta(hours=24), str(e))
         else:
             # self.pushover.message(message="No entries to sync")
             print("No entries to sync")
