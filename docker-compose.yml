@@ -3,6 +3,9 @@ services:
   worker:
     image: dr.meskatech.com/timing2paprika:latest
     restart: unless-stopped
+    depends_on:
+      - redis
+
     environment:
       - TIMING_TOKEN=******
       - TIMING_URL=******

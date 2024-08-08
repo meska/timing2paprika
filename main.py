@@ -4,7 +4,6 @@ from time import sleep
 
 import sentry_sdk
 from dotenv import load_dotenv
-from telegram import Bot
 
 from timing2paprika import Timing2Paprika
 
@@ -21,7 +20,7 @@ if __name__ == "__main__":
 
     # loop ogni ora
     while True:
-        from_date = datetime.now() - timedelta(days=30)
+        from_date = datetime.now() - timedelta(days=7)
         t2p.run(from_date=from_date, customer="Quamm")
         print("Sleeping for 1 hour")
         print("--------------------------------")
