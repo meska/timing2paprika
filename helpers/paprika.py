@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 import os
-
+import pyotp
 import requests
 
 
@@ -14,20 +14,25 @@ class Paprika:
         if self.login(
                 os.getenv("PAPRIKA_USERNAME"),
                 os.getenv("PAPRIKA_PASSWORD"),
-                os.getenv("PAPRIKA_PASSWORD2"),
+                os.getenv("PAPRIKA_2FASECRET",""),
                 os.getenv("PAPRIKA_DB"),
         ):
             self.clienti = self.get_clienti()
             self.incarichi = self.get_incarichi()
 
-    def login(self, username: str, password: str, password2: str, db: str) -> bool:
+    def login(self, username: str, password: str, twofasecret: str, db: str) -> bool:
         print("Logging in Paprika")
+        if twofasecret:
+            totp = pyotp.TOTP(twofasecret)
+            code = totp.now()
+        else:
+            code = ""
         res = self.session.post(
             f'{os.getenv("PAPRIKA_URL")}/logOn/login',
             json={
                 "USR_USERNAME": username,
                 "USR_PASSWORD": password,
-                "USR_PASSWORD2": password2,
+                "USR_PASSWORD2": code,
                 "DATABASE": db,
                 "width": 2560,
                 "height": 1440

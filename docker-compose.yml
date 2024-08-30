@@ -13,7 +13,7 @@ services:
       - PAPRIKA_URL=******
       - PAPRIKA_USERNAME=******
       - PAPRIKA_PASSWORD=******
-      - PAPRIKA_PASSWORD2=******
+      - PAPRIKA_2FASECRET=******
       - PAPRIKA_DB=******
       - SENTRY_DSN=******
       - REDIS_URL=redis://redis:6379
