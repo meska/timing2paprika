@@ -3,6 +3,7 @@ Sync Timing App to Infinity
 """
 import asyncio
 import os
+import re
 from datetime import datetime, timedelta
 
 from redis import Redis
@@ -78,8 +79,9 @@ class Timing2Paprika:
 
             for entry in entries:
 
-                # skip if cached
-                if self.r.get(entry.get("self")):
+                # skip if cached and not debug
+                debug = os.getenv("DEBUG") == "True"
+                if self.r.get(entry.get("self")) and not debug:
                     continue
 
                 self.message(message=f"Syncing {entry.get('title')}")
@@ -91,12 +93,22 @@ class Timing2Paprika:
                     entry.get("end_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
 
+                # controllo se è specificato l'incarico
+                task = None
+                notes = entry.get("project").get("notes")
+                if notes:
+                    match = re.search(r'PAPRIKA=(\d+)', notes)
+                    if match:
+                        task = match.group(1)
+
+
                 try:
                     paprika_id = self.paprika.add_entry(
                         project=entry.get("project").get("title"),
                         title=entry.get("title"),
                         start_date=start_date,
                         end_date=end_date,
+                        task=task,
                     )
 
                     self.timing.update_entry(

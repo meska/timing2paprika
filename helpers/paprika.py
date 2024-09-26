@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 import os
 import pyotp
@@ -265,7 +266,7 @@ class Paprika:
             raise ValueError("Error getting progetti from Paprika")
         return res.json().get('result').get('JO_SEARCH')
 
-    def add_entry(self, project: str, title: str, start_date: datetime, end_date: datetime) -> int:
+    def add_entry(self, project: str, title: str, start_date: datetime, end_date: datetime,task=None) -> int:
         print("Adding entry to Paprika")
 
         cli = project.split("|")[-1].strip()
@@ -297,7 +298,10 @@ class Paprika:
 
             return True
 
-        incarichi_attivi = list(filter(filter_incarichi, self.incarichi))
+        if task:
+            incarichi_attivi = list(filter(lambda x: task in x.get('JT_KEY'), self.incarichi))
+        else:
+            incarichi_attivi = list(filter(filter_incarichi, self.incarichi))
 
         if len(incarichi_attivi) == 0:
             raise ValueError(f"Nessun incarico attivo trovato {project}")
