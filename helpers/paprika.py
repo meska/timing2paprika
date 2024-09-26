@@ -1,7 +1,6 @@
-import json
-import re
-from datetime import datetime
 import os
+from datetime import datetime
+
 import pyotp
 import requests
 
@@ -13,10 +12,10 @@ class Paprika:
     def __init__(self):
         self.session = requests.Session()
         if self.login(
-                os.getenv("PAPRIKA_USERNAME"),
-                os.getenv("PAPRIKA_PASSWORD"),
-                os.getenv("PAPRIKA_2FASECRET",""),
-                os.getenv("PAPRIKA_DB"),
+            os.getenv("PAPRIKA_USERNAME"),
+            os.getenv("PAPRIKA_PASSWORD"),
+            os.getenv("PAPRIKA_2FASECRET", ""),
+            os.getenv("PAPRIKA_DB"),
         ):
             self.clienti = self.get_clienti()
             self.incarichi = self.get_incarichi()
@@ -36,30 +35,31 @@ class Paprika:
                 "USR_PASSWORD2": code,
                 "DATABASE": db,
                 "width": 2560,
-                "height": 1440
-            }
-
+                "height": 1440,
+            },
         )
         if res.status_code != 200:
             raise ValueError("Error logging in Paprika")
-        if not res.json().get('status'):
-            raise ValueError(f"Error logging in Paprika: {res.json().get('message', '')}")
+        if not res.json().get("status"):
+            raise ValueError(
+                f"Error logging in Paprika: {res.json().get('message', '')}"
+            )
         return True
 
     def get_clienti(self) -> list:
         print("Getting clienti from Paprika")
-        res = self.session.get(f'{os.getenv("PAPRIKA_URL")}/TBp0201/search/SA_SEARCH?search=&searchMc=false&limit=201')
+        res = self.session.get(
+            f'{os.getenv("PAPRIKA_URL")}/TBp0201/search/SA_SEARCH?search=&searchMc=false&limit=201'
+        )
         if res.status_code != 200:
             raise ValueError("Error getting clienti from Paprika")
-        return res.json().get('result').get('SEARCH')
+        return res.json().get("result").get("SEARCH")
 
     def get_incarichi(self) -> int:
         print("Finding incarico in Paprika")
         res = self.session.post(
             f'{os.getenv("PAPRIKA_URL")}/wJTb0100/post/p1',
-            headers={
-                'Content-Type': 'text/plain'
-            },
+            headers={"Content-Type": "text/plain"},
             data="""{
                 "selectItems": [
                     {
@@ -238,69 +238,96 @@ class Paprika:
                     "selection": -1,
                     "field": null
                 }
-            }""".encode("utf-8")
+            }""".encode(
+                "utf-8"
+            ),
         )
         if res.status_code != 200:
             raise ValueError("Error getting incarichi from Paprika")
-        incarichi = res.json().get('result').get('records')
+        incarichi = res.json().get("result").get("records")
 
         for x in incarichi:
             # ignoro quelli scaduti
             try:
-                if x.get('JT_DATE_2') is not None:
-                    job_end_date = datetime.fromisoformat(x.get('JT_DATE_2'))
+                if x.get("JT_DATE_2") is not None:
+                    job_end_date = datetime.fromisoformat(x.get("JT_DATE_2"))
                     if datetime.now(tz=job_end_date.tzinfo) > job_end_date:
                         continue
-                print(f"Incarico Attivo {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}")
+                print(
+                    f"Incarico Attivo {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}"
+                )
             except TypeError:
-                self.error(f"Errore parsing data {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}")
-                print(f"Errore parsing data {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}")
+                self.error(
+                    f"Errore parsing data {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}"
+                )
+                print(
+                    f"Errore parsing data {x['JT_KEY']} {x['JO_JOB_KEY']} {x['JT_SHORT_DESC']}"
+                )
 
         return incarichi
 
     def get_progetti_cliente(self, cliente_id):
         date = datetime.now().strftime("%Y%m%d")
         res = self.session.get(
-            f'{os.getenv("PAPRIKA_URL")}/TBp0201/search/JO_SEARCH?search=&searchMc=false&samn={cliente_id}&date={date}&limit=201')
+            f'{os.getenv("PAPRIKA_URL")}/TBp0201/search/JO_SEARCH?search=&searchMc=false&samn={cliente_id}&date={date}&limit=201'
+        )
         if res.status_code != 200:
             raise ValueError("Error getting progetti from Paprika")
-        return res.json().get('result').get('JO_SEARCH')
+        return res.json().get("result").get("JO_SEARCH")
 
-    def add_entry(self, project: str, title: str, start_date: datetime, end_date: datetime,task=None) -> int:
+    def add_entry(
+        self,
+        project: str,
+        title: str,
+        start_date: datetime,
+        end_date: datetime,
+        task=None,
+    ) -> int:
         print("Adding entry to Paprika")
 
-        cli = project.split("|")[-1].strip()
+        if task:
+            incarichi_attivi = list(
+                filter(lambda x: task in x.get("JT_KEY"), self.incarichi)
+            )
+        else:
+            cli = project.split("|")[-1].strip()
 
-        cliente = list(filter(lambda x: x.get('SA_SHORTNAME').lower().strip() == cli.lower(), self.clienti))
+            cliente = list(
+                filter(
+                    lambda x: x.get("SA_SHORTNAME").lower().strip() == cli.lower(),
+                    self.clienti,
+                )
+            )
 
-        if len(cliente) == 0:
-            listclienti = list(map(lambda x: x.get('SA_SHORTNAME').lower().strip(), self.clienti))
-            raise ValueError(f"Customer {project} not found in Paprika: {listclienti}")
-        cliente = cliente[0]
-        progetti = self.get_progetti_cliente(cliente.get('SA_MN'))
+            if len(cliente) == 0:
+                listclienti = list(
+                    map(lambda x: x.get("SA_SHORTNAME").lower().strip(), self.clienti)
+                )
+                raise ValueError(
+                    f"Customer {project} not found in Paprika: {listclienti}"
+                )
+            cliente = cliente[0]
+            progetti = self.get_progetti_cliente(cliente.get("SA_MN"))
 
-        for p in progetti:
-            print(f"Progetto {p['JO_JOB_KEY']} {p['JO_JOB_TITLE']}")
+            for p in progetti:
+                print(f"Progetto {p['JO_JOB_KEY']} {p['JO_JOB_TITLE']}")
 
-        # individuo l'incarico corretto in base ai progetti
-        def filter_incarichi(x):
+            # individuo l'incarico corretto in base ai progetti
+            def filter_incarichi(x):
 
-            # ignoro quelli scaduti
-            if x.get('JT_DATE_2') is not None:
-                job_end_date = datetime.fromisoformat(x.get('JT_DATE_2'))
-                if datetime.now(tz=job_end_date.tzinfo) > job_end_date:
+                # ignoro quelli scaduti
+                if x.get("JT_DATE_2") is not None:
+                    job_end_date = datetime.fromisoformat(x.get("JT_DATE_2"))
+                    if datetime.now(tz=job_end_date.tzinfo) > job_end_date:
+                        return False
+
+                job = x.get("JO_JOB_KEY")
+                proj = list(filter(lambda x: x.get("JO_JOB_KEY") == job, progetti))
+                if len(proj) == 0:
                     return False
 
-            job = x.get('JO_JOB_KEY')
-            proj = list(filter(lambda x: x.get('JO_JOB_KEY') == job, progetti))
-            if len(proj) == 0:
-                return False
+                return True
 
-            return True
-
-        if task:
-            incarichi_attivi = list(filter(lambda x: task in x.get('JT_KEY'), self.incarichi))
-        else:
             incarichi_attivi = list(filter(filter_incarichi, self.incarichi))
 
         if len(incarichi_attivi) == 0:
@@ -310,8 +337,8 @@ class Paprika:
 
         # trovato l'icarico, aggiungo l'entry
         # aggiungo timezone a start_date e a end_date
-        job_id = incarico.get('JT_JO_MN')
-        task_id = incarico.get('JT_MN')
+        job_id = incarico.get("JT_JO_MN")
+        task_id = incarico.get("JT_MN")
         myself = 14  # TODO recuperare il mio id
 
         tot_time = round((end_date - start_date).total_seconds() / 3600, 2)
@@ -324,7 +351,7 @@ class Paprika:
             "TB_TOT_TIME": tot_time,
             "TB_ACTIVITY_TYPE": "DEVS",
             "TB_NARRATIVE": title,
-            "TB_TIME_DATE": start_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            "TB_TIME_DATE": start_date.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         }
 
         res = self.session.post(
@@ -334,7 +361,11 @@ class Paprika:
         if res.status_code != 200:
             raise ValueError("Error adding entry to Paprika")
 
-        if not res.json().get('status'):
-            raise ValueError(f"Error adding entry to Paprika: {res.json().get('message', '')}")
+        if not res.json().get("status"):
+            raise ValueError(
+                f"Error adding entry to Paprika: {res.json().get('message', '')}"
+            )
 
-        return res.json().get('result').get('TB').get('TB_MN') # TB_MN è il numero dell'entry salvata
+        return (
+            res.json().get("result").get("TB").get("TB_MN")
+        )  # TB_MN è il numero dell'entry salvata

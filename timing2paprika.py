@@ -1,6 +1,7 @@
 """
 Sync Timing App to Infinity
 """
+
 import asyncio
 import os
 import re
@@ -17,19 +18,23 @@ class Timing2Paprika:
 
     def message(self, message):
         if self.telegram:
-            asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
-                chat_id=os.getenv("TELEGRAM_CHAT_ID"),
-                text=message,
-            ))
+            asyncio.get_event_loop().run_until_complete(
+                self.telegram.send_message(
+                    chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+                    text=message,
+                )
+            )
         else:
             print(message)
 
     def error(self, message, title=None):
         if self.telegram:
-            asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
-                chat_id=os.getenv("TELEGRAM_CHAT_ID"),
-                text=message,
-            ))
+            asyncio.get_event_loop().run_until_complete(
+                self.telegram.send_message(
+                    chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+                    text=message,
+                )
+            )
         else:
             print(message)
 
@@ -40,10 +45,12 @@ class Timing2Paprika:
 
         if telegram:
             self.telegram = Bot(token=os.getenv("TELEGRAM_TOKEN"))
-            asyncio.get_event_loop().run_until_complete(self.telegram.send_message(
-                chat_id=os.getenv("TELEGRAM_CHAT_ID"),
-                text="Starting Timing2Paprika",
-            ))
+            asyncio.get_event_loop().run_until_complete(
+                self.telegram.send_message(
+                    chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+                    text="Starting Timing2Paprika",
+                )
+            )
         self.paprika = None
 
     # async function
@@ -97,10 +104,9 @@ class Timing2Paprika:
                 task = None
                 notes = entry.get("project").get("notes")
                 if notes:
-                    match = re.search(r'PAPRIKA=(\d+)', notes)
+                    match = re.search(r"PAPRIKA=(\d+)", notes)
                     if match:
                         task = match.group(1)
-
 
                 try:
                     paprika_id = self.paprika.add_entry(
@@ -114,6 +120,7 @@ class Timing2Paprika:
                     self.timing.update_entry(
                         entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
                     )
+                    self.message(message=f"Synced {entry.get('title')}")
                 except Exception as e:
                     self.error(message=f"Error syncing {entry.get('title')} {e}")
                     # cache error for 24 hours
