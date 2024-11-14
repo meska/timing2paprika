@@ -15,8 +15,14 @@ sentry_sdk.init(
 load_dotenv()
 
 if __name__ == "__main__":
+    t2p = Timing2Paprika(telegram=True)
+    from_date = datetime.now() - timedelta(days=7)
+    t2p.run(from_date=from_date, customer="Quamm")
+
+if __name__ == "__mainz__":
     print("Starting Timing2Paprika")
     from sentry_sdk import capture_exception
+
     t2p = Timing2Paprika(telegram=True)
 
     # loop ogni ora
