@@ -17,7 +17,7 @@ load_dotenv()
 if __name__ == "__main__":
     t2p = Timing2Paprika(telegram=True)
     from_date = datetime.now() - timedelta(days=7)
-    t2p.run(from_date=from_date, customer="Quamm")
+    t2p.run(from_date=from_date, to_date=None, customer="Quamm")
 
 if __name__ == "__mainz__":
     print("Starting Timing2Paprika")
@@ -29,7 +29,7 @@ if __name__ == "__mainz__":
     while True:
         from_date = datetime.now() - timedelta(days=7)
         try:
-            t2p.run(from_date=from_date, customer="Quamm")
+            t2p.run(from_date=from_date, to_date=None, customer="Quamm")
             print("Sleeping for 1 hour")
             print("--------------------------------")
             sleep(3600)

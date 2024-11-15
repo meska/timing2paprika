@@ -22,40 +22,32 @@ class Timing2Paprika:
                 self.telegram.send_message(
                     chat_id=os.getenv("TELEGRAM_CHAT_ID"),
                     text=message,
-                )
+                )  # type: ignore
             )
         else:
             print(message)
 
-    def error(self, message, title=None):
-        if self.telegram:
-            asyncio.get_event_loop().run_until_complete(
-                self.telegram.send_message(
-                    chat_id=os.getenv("TELEGRAM_CHAT_ID"),
-                    text=message,
-                )
-            )
-        else:
-            print(message)
+    def error(self, message):
+        return self.message(f"Error: {message}")
 
     def __init__(self, telegram=False):
         self.timing = Timing()
-        redis_url = os.getenv("REDIS_URL")
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.r = Redis.from_url(redis_url)
 
         if telegram:
-            self.telegram = Bot(token=os.getenv("TELEGRAM_TOKEN"))
-            asyncio.get_event_loop().run_until_complete(
-                self.telegram.send_message(
-                    chat_id=os.getenv("TELEGRAM_CHAT_ID"),
-                    text="Starting Timing2Paprika",
-                )
-            )
+            self.telegram = Bot(token=os.getenv("TELEGRAM_TOKEN", ""))
+            # asyncio.get_event_loop().run_until_complete(
+            #     self.telegram.send_message(
+            #         chat_id=os.getenv("TELEGRAM_CHAT_ID"),
+            #         text="Starting Timing2Paprika",
+            #     )
+            # )
         self.paprika = None
 
     # async function
 
-    def run(self, from_date: datetime = None, to_date: datetime = None, customer=None):
+    def run(self, from_date: datetime | None, to_date: datetime | None, customer=None):
         if from_date is None:
             from_date = datetime.now() - timedelta(days=2)
         if to_date is None:
@@ -93,12 +85,8 @@ class Timing2Paprika:
 
                 self.message(message=f"Syncing {entry.get('title')}")
 
-                start_date = datetime.strptime(
-                    entry.get("start_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
-                )
-                end_date = datetime.strptime(
-                    entry.get("end_date"), "%Y-%m-%dT%H:%M:%S.%f%z"
-                )
+                start_date = datetime.strptime(entry.get("start_date"), "%Y-%m-%dT%H:%M:%S.%f%z")
+                end_date = datetime.strptime(entry.get("end_date"), "%Y-%m-%dT%H:%M:%S.%f%z")
 
                 # controllo se è specificato l'incarico
                 task = None
@@ -117,12 +105,10 @@ class Timing2Paprika:
                         task=task,
                     )
 
-                    self.timing.update_entry(
-                        entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}"
-                    )
+                    self.timing.update_entry(entry.get("self"), notes=f"PAPRIKA_ID:{paprika_id}")
                     self.message(message=f"Synced {entry.get('title')}")
                 except Exception as e:
-                    self.error(message=f"Error syncing {entry.get('title')} {e}")
+                    self.error(message=f"syncing {entry.get('title')} {e}")
                     # cache error for 24 hours
                     self.r.setex(entry.get("self"), timedelta(hours=24), str(e))
         else:
